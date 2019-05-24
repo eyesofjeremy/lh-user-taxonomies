@@ -160,25 +160,54 @@ if ($taxonomy->show_in_menu !== false){
 	}
 	
 
-	private function renderTree( $elements, $stack, $user, $key, $input = 'checkbox' ) {
-		foreach ( $elements as $element ) {
-			?>
-			<div>
-				<input type="<?php echo $input ?>" name="<?php echo $key?>[]" id="<?php echo "{$key}-{$element->slug}"?>" value="<?php echo $element->slug?>" <?php 
-				if ($user->ID){
-					if (in_array($element->slug, $stack)) {
-						echo "checked=\"checked\"";
-					}
-				}
-				?> />
-				<label for="<?php echo "{$key}-{$element->slug}"?>"><?php echo $element->name ?></label>
-				<?php if( isset( $element->children ) ) {
+	private function renderTree( $elements, $stack, $user, $key, $input = 'checkbox', $indent_option = '' ) {
+
+        if( $input == 'select' ) {
+            if( $indent_option == '' ) { ?>
+                <select name="<?php echo $key; ?>" id="<?php echo $key; ?>">
+	            <?php
+            }
+	        foreach ( $elements as $element ) {
+		        ?>
+              <div>
+              <option value="<?php echo $element->slug?>" <?php
+				        if ($user->ID){
+					        if (in_array($element->slug, $stack)) {
+						        echo " selected";
+					        }
+				        }
+			        ?>><?php echo $indent_option . $element->name ?></option>
+		        <?php if( isset( $element->children ) ) {
+			        $this->renderTree( $element->children, $stack, $user, $key, $input, $indent_option . '— ' );
+		        }
+		        ?></div><?php
+	        }
+
+            if( $indent_option == '' ) { ?>
+                </select>
+	            <?php
+            }
+
+        } else {
+	        foreach ( $elements as $element ) {
+		        ?>
+              <div>
+				<input type="<?php echo $input ?>" name="<?php echo $key?>[]" id="<?php echo "{$key}-{$element->slug}"?>" value="<?php echo $element->slug?>" <?php
+				        if ( $user->ID ) {
+					        if ( in_array( $element->slug, $stack ) ) {
+						        echo "checked=\"checked\"";
+					        }
+				        }
+			        ?> />
+              <label for="<?php echo "{$key}-{$element->slug}" ?>"><?php echo $element->name ?></label>
+		        <?php if ( isset( $element->children ) ) {
 					?><div style="padding-left: 24px;"><?php
-						$this->renderTree( $element->children, $stack, $user, $key, $input );
-					?></div><?php
-				}
-			?></div><?php
-	    }
+			        $this->renderTree( $element->children, $stack, $user, $key, $input );
+			        ?></div><?php
+		        }
+		        ?></div><?php
+	        }
+        }
 	}
 	/**
 	 * Add the taxonomies to the user view/edit screen
@@ -195,9 +224,14 @@ if ($taxonomy->show_in_menu !== false){
 			// Check the current user can assign terms for this taxonomy
 			if(current_user_can($taxonomy->cap->assign_terms)){
 			// Get all the terms in this taxonomy
+
 			$terms		= get_terms($key, array('hide_empty'=>false));
 			$stack 		= wp_list_pluck( wp_get_object_terms( $user->ID, $key ), 'slug' );
 			$input_type = ( isset($taxonomy->single_value) && ($taxonomy->single_value == true) ) ? 'radio' : 'checkbox' ;
+
+			if( $taxonomy->single_value && $taxonomy->single_value === 'select' ) {
+			    $input_type = 'select';
+            }
 			?>
 
 				<table class="form-table">
