@@ -243,7 +243,7 @@ if ($taxonomy->show_in_menu !== false){
 								<?php $this->renderTree( $this->buildTree( $terms ), $stack, $user, $key, $input_type ); ?>
 
 							<?php else:?>
-								<?php _e("There are no {$taxonomy->name} available.")?>
+								<?php _e("There are no {$taxonomy->label} available.")?>
 							<?php endif?>
 						</td>
 					</tr>
