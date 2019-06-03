@@ -166,13 +166,14 @@ if ($taxonomy->show_in_menu !== false){
 	private function renderTree( $elements, $stack, $user, $key, $input = 'checkbox', $indent_option = '' ) {
 
         if( $input == 'select' ) {
+
             if( $indent_option == '' ) { ?>
                 <select name="<?php echo $key; ?>" id="<?php echo $key; ?>">
+                    <option value=""<?php if( empty( $stack ) ) { echo " selected=\"selected\""; } ?>></option>
 	            <?php
             }
 	        foreach ( $elements as $element ) {
 		        ?>
-              <div>
               <option value="<?php echo $element->slug?>" <?php
 				        if ($user->ID){
 					        if (in_array($element->slug, $stack)) {
@@ -183,7 +184,7 @@ if ($taxonomy->show_in_menu !== false){
 		        <?php if( isset( $element->children ) ) {
 			        $this->renderTree( $element->children, $stack, $user, $key, $input, $indent_option . '— ' );
 		        }
-		        ?></div><?php
+		        ?><?php
 	        }
 
             if( $indent_option == '' ) { ?>
