@@ -156,6 +156,9 @@ if ($taxonomy->show_in_menu !== false){
 			unset($elements[$element->$key]);
 			}
 			}
+		if( $parentId == 0 ) {
+			$branch = apply_filters( 'lh_user_terms', $branch );
+		}
 		return $branch;
 	}
 	
