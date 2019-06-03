@@ -1,89 +1,66 @@
 <?php
-/*
-Plugin Name: LH User Taxonomies
-Plugin URI: http://lhero.org/plugins/lh-user-taxonomies/
-Author: Peter Shaw
-Author URI: http://shawfactor.com/
-Description: Simplify the process of adding support for custom taxonomies for Users. Just use `register_taxonomy` and everything else is taken care of. With added functions by Peter Shaw.
-Version:	1.4
-== Changelog ==
-= 1.0 =
-*Initial Release
-= 1.1 =
-*Added icon
-= 1.2 =
-*Added various patches, props nikolaynesov
-= 1.3 =
-*Better readme.txt
-= 1.3.1 =
-*Minor fix, thanks lindesvard
-= 1.4 =
-*Minor fix, and tree logic for hierarchical taxonomies - thanks again Carl-Gerhard Lindesvard
-License:
-Released under the GPL license
-http://www.gnu.org/copyleft/gpl.html
-Copyright 2014  Peter Shaw  (email : pete@localhero.biz)
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published bythe Free Software Foundation; either version 2 of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+/**
+ * Plugin Name: LH User Taxonomies
+ * Plugin URI: https://lhero.org/portfolio/lh-user-taxonomies/
+ * Author: Peter Shaw
+ * Author URI: https://shawfactor.com/
+ * Description: Simplify the process of adding support for custom taxonomies for Users. Just use `register_taxonomy` and everything else is taken care of. 
+ * Text Domain: lh_uts
+ * Version:	1.57
 */
+
+if (!class_exists('LH_User_Taxonomies_plugin')) {
+
 class LH_User_Taxonomies_plugin {
-	private static $taxonomies	= array();
+    
+private static $instance;
+
+private static $taxonomies	= array();
+var $namespace = 'lh_uts';
+
+
+static function write_log($log) {
+        if (true === WP_DEBUG) {
+            if (is_array($log) || is_object($log)) {
+                error_log(print_r($log, true));
+            } else {
+                error_log($log);
+            }
+        }
+    }
 	
-	/**
-	 * Register all the hooks and filters we can in advance
-	 * Some will need to be registered later on, as they require knowledge of the taxonomy name
-	 */
-	public function __construct() {
-		// Taxonomies
-		add_action('registered_taxonomy',		array($this, 'registered_taxonomy'), 10, 3);
-		
-		// Menus
-		add_action('admin_menu',				array($this, 'admin_menu'));
-		add_filter('parent_file',				array($this, 'parent_menu'));
-		
-		// User Profiles
-		add_action('show_user_profile',			array($this, 'user_profile'));
-		add_action('edit_user_profile',			array($this, 'user_profile'));
-		add_action('personal_options_update',	array($this, 'save_profile'));
-		add_action('edit_user_profile_update',	array($this, 'save_profile'));
-		add_action('user_register',	array($this, 'save_profile'));
-		add_filter('sanitize_user',				array($this, 'restrict_username'));
-		add_filter('manage_users_columns', array($this, 'lh_user_taxonomies_add_user_id_column'));
-		add_action('manage_users_custom_column',  array($this, 'lh_user_taxonomies_add_taxonomy_column_content'), 10, 3);
-                add_action('pre_user_query', array($this, 'user_query'));
-	}
-	
-	/**
-	 * This is our way into manipulating registered taxonomies
-	 * It's fired at the end of the register_taxonomy function
-	 * 
-	 * @param String $taxonomy	- The name of the taxonomy being registered
-	 * @param String $object	- The object type the taxonomy is for; We only care if this is "user"
-	 * @param Array $args		- The user supplied + default arguments for registering the taxonomy
-	 */
-	public function registered_taxonomy($taxonomy, $object, $args) {
-		global $wp_taxonomies;
-		
-		// Only modify user taxonomies, everything else can stay as is
-		if($object != 'user') return;
-		
-		// We're given an array, but expected to work with an object later on
-		$args	= (object) $args;
-		
-		// Register any hooks/filters that rely on knowing the taxonomy now
-		add_filter("manage_edit-{$taxonomy}_columns",	array($this, 'set_user_column'));
-		add_action("manage_{$taxonomy}_custom_column",	array($this, 'set_user_column_values'), 10, 3);
-		
-		// Set the callback to update the count if not already set
-		if(empty($args->update_count_callback)) {
-			$args->update_count_callback	= array($this, 'update_count');
-		}
-		
-		// We're finished, make sure we save out changes
-		$wp_taxonomies[$taxonomy]		= $args;
-		self::$taxonomies[$taxonomy]	= $args;
-	}
+
+	 /**
+     * This is our way into manipulating registered taxonomies
+     * It’s fired at the end of the register_taxonomy function
+     *
+     * @param String $taxonomy  – The name of the taxonomy being registered
+     * @param String $object    – The object type the taxonomy is for; We only care if this is “user”
+     * @param Array $args   – The user supplied + default arguments for registering the taxonomy
+     */
+    public function registered_taxonomy( $taxonomy, $object, $args ) {
+        global $wp_taxonomies;
+ 
+        // Only modify user taxonomies, everything else can stay as is
+        if ( ( is_string( $object ) and ( 'user' === $object ) ) or ( is_array( $object ) and in_array( 'user', $object, true ) ) ) {
+ 
+            // We’re given an array, but expected to work with an object later on
+            $args   = (object) $args;
+ 
+            // Register any hooks/filters that rely on knowing the taxonomy now
+            add_filter( 'manage_edit-' . $taxonomy . '_columns', array( $this, 'set_user_column' ) );
+            add_action( 'manage_' . $taxonomy . '_custom_column', array( $this, 'set_user_column_values' ), 10, 3 );
+ 
+            // Set the callback to update the count if not already set
+            if ( empty( $args->update_count_callback ) ) {
+                $args->update_count_callback = array( $this, 'update_count' );
+            }
+ 
+            // We’re finished, make sure we save out changes
+            $wp_taxonomies[ $taxonomy ] = $args;
+            self::$taxonomies[ $taxonomy ] = $args;
+        }
+    }
 	
 	/**
 	 * We need to manually update the number of users for a taxonomy term
@@ -115,12 +92,16 @@ class LH_User_Taxonomies_plugin {
 		ksort($taxonomies);
 		
 		foreach($taxonomies as $key=>$taxonomy) {
+
+if ($taxonomy->show_in_menu !== false){
 			add_users_page(
 				$taxonomy->labels->menu_name, 
 				$taxonomy->labels->menu_name, 
 				$taxonomy->cap->manage_terms, 
 				"edit-tags.php?taxonomy={$key}"
 			);
+
+}
 		}
 	}
 	
@@ -160,20 +141,25 @@ class LH_User_Taxonomies_plugin {
 			echo $term->count;
 		}
 	}
+	
+
+
 	private function buildTree( array &$elements, $parentId = 0 ) {
-	    $branch = array();
-	    foreach ($elements as $element) {
-	        if ($element->parent == $parentId) {
-	            $children = $this->buildTree($elements, $element->term_id);
-	            if ($children) {
-	                $element->children = $children;
-	            }
-	            $branch[$element->term_id] = $element;
-	            unset($elements[$element->term_id]);
-	        }
-	    }
-	    return $branch;
+	$branch = array();
+		foreach ($elements as $key=>$element) {
+			if ($element->parent == $parentId) {
+				$children = $this->buildTree($elements, $element->term_id);
+					if ($children) {
+						$element->children = $children;
+						}
+				$branch[$element->term_id] = $element;
+			unset($elements[$element->$key]);
+			}
+			}
+		return $branch;
 	}
+	
+
 	private function renderTree( $elements, $stack, $user, $key, $input = 'checkbox' ) {
 		foreach ( $elements as $element ) {
 			?>
@@ -205,13 +191,13 @@ class LH_User_Taxonomies_plugin {
 		// But we can't rely on the number of taxonomies, as capabilities may vary
 		ob_start();
 		
-		foreach(self::$taxonomies as $key=>$taxonomy):
+		foreach(self::$taxonomies as $key=>$taxonomy){
 			// Check the current user can assign terms for this taxonomy
-			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
+			if(current_user_can($taxonomy->cap->assign_terms)){
 			// Get all the terms in this taxonomy
 			$terms		= get_terms($key, array('hide_empty'=>false));
 			$stack 		= wp_list_pluck( wp_get_object_terms( $user->ID, $key ), 'slug' );
-			$input_type = ( $taxonomy->single_value ) ? 'radio' : 'checkbox' ;
+			$input_type = ( isset($taxonomy->single_value) && ($taxonomy->single_value == true) ) ? 'radio' : 'checkbox' ;
 			?>
 
 				<table class="form-table">
@@ -223,17 +209,19 @@ class LH_User_Taxonomies_plugin {
 								<?php $this->renderTree( $this->buildTree( $terms ), $stack, $user, $key, $input_type ); ?>
 
 							<?php else:?>
-								<?php _e("There are no {$taxonomy->labels->name} available.")?>
+								<?php _e("There are no {$taxonomy->name} available.")?>
 							<?php endif?>
 						</td>
 					</tr>
 				</table>
-
-		<?php endforeach; // Taxonomies
+<input type="hidden" id="<?php echo $this->namespace.'-'.$key.'-backend_edit'; ?>" name="<?php echo $this->namespace.'-'.$key.'-backend_edit'; ?>" value="1" />
+		<?php }
+		  }
+		// Taxonomies
 		// Output the above if we have anything, with a heading
 		$output	= ob_get_clean();
 		if(!empty($output)) {
-			echo '<h3>', __('Taxonomies'), '</h3>';
+			echo '<h3>', __('Taxonomies', $this->namespace), '</h3>';
 			echo $output;
 		}
 	}
@@ -243,11 +231,15 @@ class LH_User_Taxonomies_plugin {
 	 * 
 	 * @param Integer $user_id	- The ID of the user to update
 	 */
-public function save_profile($user_id) {
+    public function save_profile($user_id) {
 		foreach(self::$taxonomies as $key=>$taxonomy) {
 			// Check the current user can edit this user and assign terms for this taxonomy
-			if(!current_user_can('edit_user', $user_id) && current_user_can($taxonomy->cap->assign_terms)) return false;
-				if (isset($_POST[$key])) {
+			
+
+			if(current_user_can('edit_user', $user_id) && current_user_can($taxonomy->cap->assign_terms) && isset($_POST[$this->namespace.'-'.$key.'-backend_edit'])){
+			    
+			    if (isset($_POST[$key])){
+
 					if (is_array($_POST[$key])){
 						$term = $_POST[$key];
 						wp_set_object_terms($user_id, $term, $key, false);
@@ -255,9 +247,17 @@ public function save_profile($user_id) {
 						$term	= esc_attr($_POST[$key]);
 						wp_set_object_terms($user_id, array($term), $key, false);
 					}
-				}
+					
+			    } else {
+			        
+			        wp_delete_object_term_relationships( $user_id, $key );
+			        
+			        
+			    }
 				// Save the data
 			clean_object_term_cache($user_id, $key);
+
+}
 		}
 	}
 	
@@ -300,6 +300,69 @@ $terms = wp_get_object_terms( $user, $taxonomy);
 		}
 	  	return implode('', $in);
 	}
+
+
+/**
+ * Get terms for a user and a taxonomy
+ *
+ * @since 0.1.0
+ *
+ * @param  mixed  $user
+ * @param  int    $taxonomy
+ *
+ * @return boolean
+ */
+private function get_terms_for_user( $user = false, $taxonomy = '' ) {
+
+	// Verify user ID
+	$user_id = is_object( $user )
+		? $user->ID
+		: absint( $user );
+
+	// Bail if empty
+	if ( empty( $user_id ) ) {
+		return false;
+	}
+
+	// Return user terms
+	return wp_get_object_terms( $user_id, $taxonomy, array(
+		'fields' => 'all_with_object_id'
+	) );
+}
+
+private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bulk = false ) {
+
+	// Get the taxonomy
+	$tax = get_taxonomy( $taxonomy );
+
+	// Make sure the current user can edit the user and assign terms before proceeding.
+	if ( ! current_user_can( 'edit_user', $user_id ) && current_user_can( $tax->cap->assign_terms ) ) {
+		return false;
+	}
+
+	if ( empty( $terms ) && empty( $bulk ) ) {
+		$terms = isset( $_POST[ $taxonomy ] )
+			? $_POST[ $taxonomy ]
+			: null;
+	}
+
+	// Delete all user terms
+	if ( is_null( $terms ) || empty( $terms ) ) {
+		wp_delete_object_term_relationships( $user_id, $taxonomy );
+
+	// Set the terms
+	} else {
+		$_terms = array_map( 'sanitize_key', $terms );
+
+		// Sets the terms for the user
+		wp_set_object_terms( $user_id, $_terms, $taxonomy, false );
+	}
+
+	// Clean the cache
+	clean_object_term_cache( $user_id, $taxonomy );
+}
+
+
 	/**
 	 * Add the column content
 	 * 
@@ -341,5 +404,249 @@ $Query->query_where .= " AND $wpdb->users.ID IN ($ids)";
 }		
 	
 }
+
+/**
+	 * Handle bulk editing of users
+	 *
+	 */
+	public function bulk_edit_action() {
+
+		// Action if it is a bulk edit request
+
+
+//need to fix this nonce and name are same
+
+if (isset($_POST[$this->namespace."-bulk_edit-taxonomy"])){
+
+
+
+if (wp_verify_nonce($_POST[$this->namespace."-bulk_edit-nonce"], $this->namespace."-bulk_edit-nonce" )){
+
+$taxonomy = $_POST[$this->namespace."-bulk_edit-taxonomy"];
+
+
+
+
+		// Setup the empty users array
+		$users = array();
+
+		// Get an array of users from the string
+		parse_str( urldecode( $_POST[ $taxonomy . '-bulk_users_to_action'] ), $users );
+
+
+
+		if ( empty( $users['users'] ) ) {
+			return;
+		}
+
+		$users    = $users['users'];
+
+
+$action   = strstr( $_POST[$this->namespace."-bulk_edit-action"], '-', true );
+$term     = str_replace( $action, '', $_POST[$this->namespace."-bulk_edit-action"] );
+
+foreach ( $users as $user ) {
+
+
+
+if ( current_user_can( 'edit_user', $user ) ) {
+
+
+
+
+			// Get term slugs of user for this taxonomy
+			$terms = $this->get_terms_for_user( $user, $taxonomy);
+
+			$update_terms = wp_list_pluck( $terms, 'slug' );
+
+
+// Adding
+			if ( 'add' === $action ) {
+				if ( ! in_array( $term, $update_terms ) ) {
+					$update_terms[] = $term;
+				}
+
+			// Removing
+			} elseif ( 'remove' === $action ) {
+				$index = array_search( $term, $update_terms );
+				if ( isset( $update_terms[ $index ] ) ) {
+					unset( $update_terms[ $index ] );
+				}
+			}
+
+			// Delete all groups if they're empty
+			if ( empty( $update_terms ) ) {
+				$update_terms = null;
+			}
+
+			// Update terms for users
+			if ( $update_terms !== $terms ) {
+
+
+				$this->set_terms_for_user( $user, $taxonomy, $update_terms, true );
+			}
+
+
+
+
 }
-new LH_User_Taxonomies_plugin;
+}
+
+		// Success
+		wp_safe_redirect( admin_url( 'users.php' ) );
+		die;
+
+}
+
+}
+
+
+	}
+
+
+	/**
+	 * Output the bulk edit markup where show_admin_column is true
+	 *
+	 *
+	 * @param   type  $views
+	 * @return  type
+	 */
+	public function bulk_edit( $views = array() ) {
+
+		// Bail if user cannot edit other users
+		if ( ! current_user_can( 'list_users' ) ) {
+			return $views;
+		}
+
+
+
+		// Get taxonomies
+$args=array(
+  'object_type' => array('user'),
+'show_admin_column' => true
+);
+$taxonomies = get_taxonomies( $args, "objects");
+
+
+
+foreach ($taxonomies as $taxonomy){
+
+$terms = get_terms( $taxonomy->name, array('hide_empty' => false ) ); 
+
+
+?>
+
+
+		<form method="post" class="user-tax-form">
+			<fieldset class="alignleft">
+				<legend class="screen-reader-text"><?php esc_html_e( 'Update Groups', $this->namespace ); ?></legend>
+
+<input name="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" value="" type="hidden" id="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" />
+
+				<label for="<?php echo esc_attr( $taxonomy->name ); ?>-select" class="screen-reader-text">
+					<?php echo esc_html( $taxonomy->labels->name ); ?>
+				</label>
+
+<select class="tax-picker" name="<?php echo esc_attr( $this->namespace ); ?>-bulk_edit-action" id="<?php echo esc_attr( $this->namespace ); ?>-<?php echo esc_attr( $taxonomy->name ); ?>-bulk_edit-action" required="required">
+					<option value=""><?php printf( esc_html__( '%s Bulk Update', $this->namespace ), $taxonomy->labels->name ); ?></option>
+
+					<optgroup label="<?php esc_html_e( 'Add', $this->namespace ); ?>">
+
+						<?php foreach ( $terms as $term ) : ?>
+
+							<option value="add-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></option>
+
+						<?php endforeach; ?>
+
+					</optgroup>
+
+
+
+					<optgroup label="<?php esc_html_e( 'Remove', $this->namespace ); ?>">
+
+						<?php foreach ( $terms as $term ) : ?>
+
+							<option value="remove-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></option>
+
+						<?php endforeach; ?>
+
+					</optgroup>
+
+				</select>
+
+<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-nonce" name="<?php  echo $this->namespace;  ?>-bulk_edit-nonce" value="<?php echo wp_create_nonce($this->namespace."-bulk_edit-nonce"); ?>" type="hidden" />
+<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-taxonomy" name="<?php  echo $this->namespace;  ?>-bulk_edit-taxonomy" value="<?php echo $taxonomy->name; ?>" type="hidden" />
+
+				<?php submit_button( esc_html__( 'Apply' ), 'action', $taxonomy->name . '-submit', false ); ?>
+
+			</fieldset>
+		</form>
+
+		<script type="text/javascript">
+			jQuery( document ).ready( function( $ ) {
+				$( '.tablenav.bottom' ).remove();
+				$( '.wrap' ).append( $( '.user-tax-form' ) );
+				$( '.wrap' ).on( 'submit', '.user-tax-form', function() {
+					var users = $( '.wp-list-table.users .check-column input:checked' ).serialize();
+					$( '#<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action' ).val( users );
+				} );
+			} );
+		</script>
+
+		<?php
+}
+
+
+		return $views;
+	}
+	
+    /**
+     * Gets an instance of our plugin.
+     *
+     * using the singleton pattern
+     */
+    public static function get_instance(){
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+ 
+        return self::$instance;
+    }
+
+
+	/**
+	 * Register all the hooks and filters we can in advance
+	 * Some will need to be registered later on, as they require knowledge of the taxonomy name
+	 */
+	public function __construct() {
+		// Taxonomies
+		add_action('registered_taxonomy', array($this, 'registered_taxonomy'), 10, 3);
+		
+		// Menus
+		add_action('admin_menu', array($this, 'admin_menu'));
+		add_filter('parent_file', array($this, 'parent_menu'));
+		
+		// User Profiles
+		add_action('show_user_profile',	array($this, 'user_profile'));
+		add_action('edit_user_profile',	array($this, 'user_profile'));
+		add_action('personal_options_update', array($this, 'save_profile'));
+		add_action('edit_user_profile_update', array($this, 'save_profile'));
+		add_action('user_register', array($this, 'save_profile'));
+		add_filter('sanitize_user', array($this, 'restrict_username'));
+		add_filter('manage_users_columns', array($this, 'lh_user_taxonomies_add_user_id_column'));
+		add_action('manage_users_custom_column', array($this, 'lh_user_taxonomies_add_taxonomy_column_content'), 10, 3);
+                add_action('pre_user_query', array($this, 'user_query'));
+
+		// Bulk edit
+		add_filter( 'views_users', array( $this, 'bulk_edit') );
+		add_action( 'admin_init',  array( $this, 'bulk_edit_action' ) );
+	}
+
+
+
+
+}
+
+$lh_user_taxonomies_instance = LH_User_Taxonomies_plugin::get_instance();
+
+}
