@@ -4,9 +4,9 @@
  * Plugin URI: https://lhero.org/portfolio/lh-user-taxonomies/
  * Author: Peter Shaw
  * Author URI: https://shawfactor.com/
- * Description: Simplify the process of adding support for custom taxonomies for Users. Just use `register_taxonomy` and everything else is taken care of. 
+ * Description: Simplify the process of adding support for custom taxonomies for Users. Just use `register_taxonomy` and everything else is taken care of. <strong>Minor tweaks for SGB Media</strong>
  * Text Domain: lh_uts
- * Version:	1.57
+ * Version:	1.57.SGB
 */
 
 if (!class_exists('LH_User_Taxonomies_plugin')) {
