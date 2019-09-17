@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name: LH User Taxonomies - SGB Version
+ * Plugin Name: LH User Taxonomies - Garden to Table Version
  * Plugin URI: https://lhero.org/portfolio/lh-user-taxonomies/
  * Author: Peter Shaw
  * Author URI: https://shawfactor.com/
- * Description: Simplify the process of adding support for custom taxonomies for Users. Just use `register_taxonomy` and everything else is taken care of. <strong>Minor tweaks for SGB Media</strong>
+ * Description: Simplify the process of adding support for custom taxonomies for Users. Just use `register_taxonomy` and everything else is taken care of. <strong>Minor tweaks for Garden to Table</strong>
  * Text Domain: lh_uts
- * Version:	1.57.1
+ * Version:	1.57.2
 */
 
 if (!class_exists('LH_User_Taxonomies_plugin')) {
