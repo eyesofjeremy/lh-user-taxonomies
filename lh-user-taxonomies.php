@@ -175,7 +175,7 @@ if ($taxonomy->show_in_menu !== false){
 	        foreach ( $elements as $element ) {
 		        ?>
               <option value="<?php echo $element->slug?>" <?php
-				        if ($user->ID){
+				        if ( is_object( $user ) && $user->ID ) {
 					        if (in_array($element->slug, $stack)) {
 						        echo " selected";
 					        }
@@ -197,7 +197,7 @@ if ($taxonomy->show_in_menu !== false){
 		        ?>
               <div>
 				<input type="<?php echo $input ?>" name="<?php echo $key?>[]" id="<?php echo "{$key}-{$element->slug}"?>" value="<?php echo $element->slug?>" <?php
-				        if ( $user->ID ) {
+				        if ( is_object( $user ) && $user->ID ) {
 					        if ( in_array( $element->slug, $stack ) ) {
 						        echo "checked=\"checked\"";
 					        }
@@ -230,7 +230,7 @@ if ($taxonomy->show_in_menu !== false){
 			// Get all the terms in this taxonomy
 
 			$terms		= get_terms($key, array('hide_empty'=>false));
-			$stack 		= wp_list_pluck( wp_get_object_terms( $user->ID, $key ), 'slug' );
+			$stack 		= (is_object( $user ) ) ? wp_list_pluck( wp_get_object_terms( $user->ID, $key ), 'slug' ) : array();
 			$input_type = ( isset($taxonomy->single_value) && ($taxonomy->single_value == true) ) ? 'radio' : 'checkbox' ;
 
 			if( $taxonomy->single_value && $taxonomy->single_value === 'select' ) {
