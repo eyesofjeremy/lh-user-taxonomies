@@ -665,6 +665,7 @@ $terms = get_terms( $taxonomy->name, array('hide_empty' => false ) );
 		add_filter('parent_file', array($this, 'parent_menu'));
 		
 		// User Profiles
+		add_action('user_new_form',	array($this, 'user_profile'));
 		add_action('show_user_profile',	array($this, 'user_profile'));
 		add_action('edit_user_profile',	array($this, 'user_profile'));
 		add_action('personal_options_update', array($this, 'save_profile'));
